@@ -1,0 +1,12 @@
+"use client";
+import {motion} from "framer-motion";
+import {Icon} from "./icons";
+import {cn} from "@/lib/utils";
+import type {TaskStatus} from "@/types";
+
+export function ProgressBar({value,className}:{value:number;className?:string}){return <div className={cn("progress-track",className)}><motion.div initial={{width:0}} animate={{width:`${Math.min(100,Math.max(0,value))}%`}} className="progress-fill"/></div>}
+const statusMap:Record<TaskStatus,{label:string;className:string;icon:any}>={completed:{label:"Completed",className:"text-[#C9A574]",icon:Icon.Check},partial:{label:"Partial",className:"text-[#E3B341]",icon:Icon.CircleDashed},missed:{label:"Missed",className:"text-[#D08B7A]",icon:Icon.CircleAlert},planned_rest:{label:"Planned rest",className:"text-[#8C8880]",icon:Icon.RotateCcw},not_applicable:{label:"Not applicable",className:"text-[#8C8880]",icon:Icon.MoreHorizontal}};
+export function StatusPill({status}:{status:TaskStatus}){const s=statusMap[status],I=s.icon;return <span className={cn("inline-flex items-center gap-1.5 text-[11px] font-medium",s.className)}><I size={13}/>{s.label}</span>}
+export function Stat({label,value,sub}:{label:string;value:string|number;sub?:string}){return <div className="panel p-4"><div className="text-[11px] uppercase tracking-[.14em] text-[#8C8880]">{label}</div><div className="mt-2 text-2xl font-semibold tracking-tight">{value}</div>{sub&&<div className="mt-1 text-xs text-[#8C8880]">{sub}</div>}</div>}
+export function Section({title,meta,children,className}:{title:string;meta?:string;children:React.ReactNode;className?:string}){return <section className={cn("panel",className)}><div className="flex items-center justify-between border-b border-white/10 px-5 py-4"><h2 className="text-sm font-semibold">{title}</h2>{meta&&<span className="text-[11px] text-[#8C8880]">{meta}</span>}</div>{children}</section>}
+export function PageHeader({eyebrow,title,description,action}:{eyebrow:string;title:string;description?:string;action?:React.ReactNode}){return <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="mb-2 text-[10px] font-bold uppercase tracking-[.24em] text-[#C9A574]">{eyebrow}</div><h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>{description&&<p className="mt-2 max-w-2xl text-sm leading-6 text-[#8C8880]">{description}</p>}</div>{action}</div>}

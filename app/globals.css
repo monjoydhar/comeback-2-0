@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+html { background:#111111; }
+body { margin:0; background:#111111; color:#FAF9F6; font-family: Arial, Helvetica, sans-serif; }
+button,input,select { font:inherit; }
+button { cursor:pointer; }
+::selection { background:#C9A574; color:#111111; }
+
+@theme {
+  --color-ink: #111111;
+  --color-cream: #FAF9F6;
+  --color-tan: #C9A574;
+  --color-brown: #6B4F3B;
+  --color-muted: #8C8880;
+  --color-fog: #E7E4DE;
+  --color-gold: #E3B341;
+  --color-line: rgba(231,228,222,.12);
+  --color-panel: #171716;
+}
+
+.shell { min-height:100vh; background:#111111; }
+.panel { background:#171716; border:1px solid rgba(231,228,222,.10); border-radius:12px; }
+.subtle-border { border:1px solid rgba(231,228,222,.10); }
+.focus-ring:focus-visible { outline:2px solid #C9A574; outline-offset:3px; }
+.grid-fade { background-image:linear-gradient(rgba(231,228,222,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(231,228,222,.035) 1px,transparent 1px); background-size:32px 32px; }
+.progress-track { height:7px; border-radius:999px; background:#282725; overflow:hidden; }
+.progress-fill { height:100%; border-radius:999px; background:#C9A574; transition:width .35s ease; }
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important;} }

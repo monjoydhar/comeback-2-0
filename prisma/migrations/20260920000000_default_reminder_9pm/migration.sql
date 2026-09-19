@@ -1,0 +1,1 @@
+ALTER TABLE "UserSettings" ALTER COLUMN "reminderHour" SET DEFAULT 21;
