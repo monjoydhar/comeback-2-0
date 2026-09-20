@@ -10,7 +10,44 @@ export default function Settings(){
  useEffect(()=>{fetch("/api/settings",{cache:"no-store"}).then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error);setData({name:j.name,email:j.email,...j.settings})}).catch(e=>setError(e.message||"Unable to load settings"));},[]);
  if(!data)return <div className="mx-auto max-w-[1100px] px-4 py-10"><div className="panel p-8 text-sm text-[#8C8880]">{error||"Loading settings…"}</div></div>;
  const set=(key:keyof SettingsState,value:any)=>setData(d=>d?({...d,[key]:value}):d);
- async function save(){setSaving(true);setError("");const {name,email,workoutSchedule,...settings}=data;const r=await fetch("/api/settings",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,settings})});const j=await r.json();if(!r.ok){setError(j.error||"Unable to save settings");setSaving(false);return;}setData({name:j.name,email:j.email,...j.settings});setSaved(true);setSaving(false);setTimeout(()=>setSaved(false),1800);}
+async function save() {
+  if (!data) return;
+
+  setSaving(true);
+  setError("");
+
+  const { name, email, workoutSchedule, ...settings } = data;
+
+  const r = await fetch("/api/settings", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name,
+      settings,
+    }),
+  });
+
+  const j = await r.json();
+
+  if (!r.ok) {
+    setError(j.error || "Unable to save settings");
+    setSaving(false);
+    return;
+  }
+
+  setData({
+    name: j.name,
+    email: j.email,
+    ...j.settings,
+  });
+
+  setSaved(true);
+  setSaving(false);
+
+  setTimeout(() => setSaved(false), 1800);
+}
  async function exportData(){window.location.assign("/api/export");}
  async function deleteAccount(){const password=window.prompt("Enter your account password to permanently delete your account.");if(password===null)return;setDeleting(true);setError("");const r=await fetch("/api/account/delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password})});const j=await r.json().catch(()=>({}));if(!r.ok){setError(j.error||"Unable to delete account");setDeleting(false);return;}window.location.assign("/login");}
  return <div className="mx-auto max-w-[1100px] px-4 py-7 sm:px-6 lg:px-10 lg:py-10"><PageHeader eyebrow="Settings" title="Tune the system." description="These controls are persisted to your account and used by the daily engine."/><div className="space-y-4">{error&&<div className="rounded-lg border border-red-300/20 bg-red-300/5 p-3 text-xs text-red-200">{error}</div>}

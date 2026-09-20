@@ -30,16 +30,14 @@ function hasResendConfig() {
 
 async function claimEmail(input: EmailPayload) {
   const relatedDate = input.relatedDate ? new Date(`${input.relatedDate}T00:00:00.000Z`) : null;
-
-  const existing = await db.emailLog.findUnique({
-    where: {
-      userId_eventType_relatedDate: {
-        userId: input.userId,
-        eventType: input.eventType,
-        relatedDate,
-      },
-    },
-  });
+  
+const existing = await db.emailLog.findFirst({
+  where: {
+    userId: input.userId,
+    eventType: input.eventType,
+    relatedDate,
+  },
+});
 
   // A sent or currently-processing event is already claimed.
   if (existing?.status === "SENT" || existing?.status === "PENDING") return null;

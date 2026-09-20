@@ -25,7 +25,14 @@ type DashboardData = {
 
 const typeToIcon: Record<string, any> = { SLEEP: Icon.Moon, DIET: Icon.Utensils, WATER: Icon.Droplets, WALKING: Icon.Footprints, WORKOUT: Icon.Dumbbell, CODING_BLOCK_1: Icon.Terminal, CODING_BLOCK_2: Icon.Terminal };
 const labels: Record<string, string> = { SLEEP: "Sleep", DIET: "Diet", WATER: "Water", WALKING: "Walking steps", WORKOUT: "Workout", CODING_BLOCK_1: "Coding Block 1", CODING_BLOCK_2: "Coding Block 2" };
-const toUiStatus = (status: ApiTask["status"]): TaskStatus => ({ COMPLETED: "completed", PARTIAL: "partial", MISSED: "missed", PLANNED_REST: "planned_rest", NOT_APPLICABLE: "not_applicable" })[status];
+const toUiStatus = (status: ApiTask["status"]): TaskStatus =>
+  ({
+    COMPLETED: "completed",
+    PARTIAL: "partial",
+    MISSED: "missed",
+    PLANNED_REST: "planned_rest",
+    NOT_APPLICABLE: "not_applicable",
+  })[status] as TaskStatus;
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
