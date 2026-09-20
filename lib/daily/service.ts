@@ -57,13 +57,11 @@ function serializeLog(log: DailyLog & { tasks: DailyTask[] }) {
   };
 }
 
-export async function getOrCreateDailyLog(
+async function findDailyLog(
   userId: string,
-  dateString: string
+  date: Date
 ) {
-  const date = parseDayDate(dateString);
-
-  const existing = await db.dailyLog.findUnique({
+  return db.dailyLog.findUnique({
     where: {
       userId_date: {
         userId,
@@ -78,8 +76,19 @@ export async function getOrCreateDailyLog(
       },
     },
   });
+}
 
-  if (existing) return serializeLog(existing);
+export async function getOrCreateDailyLog(
+  userId: string,
+  dateString: string
+) {
+  const date = parseDayDate(dateString);
+
+  const existing = await findDailyLog(userId, date);
+
+  if (existing) {
+    return serializeLog(existing);
+  }
 
   const settings = await db.userSettings.findUnique({
     where: {
@@ -95,7 +104,11 @@ export async function getOrCreateDailyLog(
     throw new Error("DATE_BEFORE_CHALLENGE_START");
   }
 
-  const weekday = weekdayForDate(dateString, settings.timezone);
+  const weekday = weekdayForDate(
+    dateString,
+    settings.timezone
+  );
+
   const dayType = dayTypeFromSchedule(
     settings.workoutSchedule,
     weekday
@@ -103,14 +116,24 @@ export async function getOrCreateDailyLog(
 
   const taskRows = DAILY_TASK_TYPES.map((type) => {
     const target = targetForTask(type, settings);
-    const sundayWalkingRest = weekday.toUpperCase() === "SUNDAY" && settings.sundayWalkingMode === "REST" && type === "WALKING";
+
+    const sundayWalkingRest =
+      weekday.toUpperCase() === "SUNDAY" &&
+      settings.sundayWalkingMode === "REST" &&
+      type === "WALKING";
+
     const notApplicable =
-      (type === "WORKOUT" && dayType !== "TRAINING") || sundayWalkingRest;
+      (type === "WORKOUT" &&
+        dayType !== "TRAINING") ||
+      sundayWalkingRest;
 
     return {
       type,
+
       status: notApplicable
-        ? (sundayWalkingRest ? ("PLANNED_REST" as TaskStatus) : ("NOT_APPLICABLE" as TaskStatus))
+        ? sundayWalkingRest
+          ? ("PLANNED_REST" as TaskStatus)
+          : ("NOT_APPLICABLE" as TaskStatus)
         : ("MISSED" as TaskStatus),
 
       targetValue: target
@@ -119,8 +142,6 @@ export async function getOrCreateDailyLog(
 
       targetUnit: target?.unit ?? null,
 
-      // Prisma JSON fields require Prisma.JsonNull
-      // when the JSON value itself should be null.
       targetSnapshot: target
         ? {
             value: target.value,
@@ -128,7 +149,9 @@ export async function getOrCreateDailyLog(
           }
         : Prisma.JsonNull,
 
-      note: sundayWalkingRest ? "Sunday walking is set to planned rest." : (TASK_NOTES[type] ?? null),
+      note: sundayWalkingRest
+        ? "Sunday walking is set to planned rest."
+        : (TASK_NOTES[type] ?? null),
     };
   });
 
@@ -136,26 +159,47 @@ export async function getOrCreateDailyLog(
     taskRows.map((task) => task.status)
   );
 
-  const created = await db.dailyLog.create({
-    data: {
-      userId,
-      date,
-      dayType,
-      ...counts,
-      tasks: {
-        create: taskRows,
-      },
-    },
-    include: {
-      tasks: {
-        orderBy: {
-          type: "asc",
+  try {
+    const created = await db.dailyLog.create({
+      data: {
+        userId,
+        date,
+        dayType,
+        ...counts,
+        tasks: {
+          create: taskRows,
         },
       },
-    },
-  });
+      include: {
+        tasks: {
+          orderBy: {
+            type: "asc",
+          },
+        },
+      },
+    });
 
-  return serializeLog(created);
+    return serializeLog(created);
+  } catch (error) {
+    // Two simultaneous requests can both reach create().
+    // The database unique constraint guarantees only one wins.
+    // If another request created the log first, simply return it.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const existingAfterRace = await findDailyLog(
+        userId,
+        date
+      );
+
+      if (existingAfterRace) {
+        return serializeLog(existingAfterRace);
+      }
+    }
+
+    throw error;
+  }
 }
 
 export async function updateDailyTask(input: {
@@ -250,7 +294,9 @@ export async function updateDailyTask(input: {
         id: task.id,
       },
       data: {
-        numericValue: new Prisma.Decimal(input.numericValue),
+        numericValue: new Prisma.Decimal(
+          input.numericValue
+        ),
         status: nextStatus,
         completedAt:
           nextStatus === "COMPLETED"
@@ -301,9 +347,6 @@ export async function updateDailyTask(input: {
         },
       });
     }
-
-    // The daily log counters are recalculated below
-    // from the authoritative task rows.
   }
 
   const updatedTasks = await db.dailyTask.findMany({
