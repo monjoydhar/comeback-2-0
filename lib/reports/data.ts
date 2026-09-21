@@ -7,7 +7,8 @@ import { getLocalDateString } from "@/lib/timezone";
 
 export async function getThirtyDayReport(
   userId: string,
-  endDate?: string
+  endDate?: string,
+  days: number = 30
 ) {
   const user = await db.user.findUnique({
     where: { id: userId },
@@ -26,6 +27,15 @@ export async function getThirtyDayReport(
     throw new Error("USER_SETTINGS_NOT_FOUND");
   }
 
+  /*
+   * Only allow the report ranges supported by the UI.
+   * Anything else falls back to 30 days.
+   */
+  const reportDays =
+    days === 7 || days === 14 || days === 30
+      ? days
+      : 30;
+
   const end =
     endDate ??
     getLocalDateString(new Date(), user.settings.timezone);
@@ -33,7 +43,10 @@ export async function getThirtyDayReport(
   const [y, m, d] = end.split("-").map(Number);
 
   const startDate = new Date(Date.UTC(y, m - 1, d));
-  startDate.setUTCDate(startDate.getUTCDate() - 29);
+
+  startDate.setUTCDate(
+    startDate.getUTCDate() - (reportDays - 1)
+  );
 
   const start = startDate.toISOString().slice(0, 10);
 
