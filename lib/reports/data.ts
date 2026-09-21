@@ -55,11 +55,15 @@ export async function getThirtyDayReport(
     (day) => day.finalizedAt !== null
   );
 
-  const averageCompletion = finalizedHistory.length
-    ? finalizedHistory.reduce(
+  /*
+   * Average completion includes all recorded days,
+   * including the current/open day.
+   */
+  const averageCompletion = history.length
+    ? history.reduce(
         (sum, day) => sum + day.completionPercent,
         0
-      ) / finalizedHistory.length
+      ) / history.length
     : 0;
 
   const missedDays = finalizedHistory.filter(
