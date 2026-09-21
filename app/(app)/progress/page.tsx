@@ -306,6 +306,7 @@ function ChartCard({
                 <YAxis tick={{ fill: "#8C8880", fontSize: 11 }} axisLine={false} tickLine={false} width={34} />
                 <Tooltip
                   labelFormatter={(_, payload) => payload?.[0]?.payload?.date ?? ""}
+                  cursor={false}
                   contentStyle={{ background: "#171716", border: "1px solid rgba(231,228,222,.12)", borderRadius: 8, color: "#FAF9F6" }}
                   formatter={(value) => [`${value}${suffix}`, title]}
                 />
