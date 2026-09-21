@@ -22,6 +22,17 @@ export async function finalizeDailyLog(input: {
   }
 
   /*
+   * A day is considered missed only when every applicable
+   * task was missed.
+   *
+   * NOT_APPLICABLE and PLANNED_REST tasks are excluded from
+   * applicableTasks by the daily completion engine.
+   */
+  const isMissedDay =
+    log.applicableTasks > 0 &&
+    log.missedTasks === log.applicableTasks;
+
+  /*
    * If another request already finalized this day,
    * do not run the reward/penalty workflow again.
    */
@@ -61,9 +72,6 @@ export async function finalizeDailyLog(input: {
    * Only the request that successfully changes finalizedAt
    * from NULL to a timestamp is allowed to continue with
    * the reward/penalty workflow.
-   *
-   * This protects against two requests arriving at nearly
-   * the same time.
    */
   const finalizedAt = new Date();
 
@@ -132,15 +140,14 @@ export async function finalizeDailyLog(input: {
   /*
    * Only the request that successfully claimed finalization
    * reaches this point.
+   *
+   * A missed day means ALL applicable tasks were missed.
+   * Otherwise, process the normal daily reward.
    */
   let reward = null;
   let penalty = null;
 
-  /*
-   * A day below 40% is considered missed.
-   * Otherwise the daily reward is processed.
-   */
-  if (Number(log.completionPercent) < 40) {
+  if (isMissedDay) {
     penalty = await applyMissedDayPenalty({
       userId: input.userId,
       dailyLogId: log.id,
@@ -157,10 +164,18 @@ export async function finalizeDailyLog(input: {
    * processing so the latest token balance is used.
    */
   const certificateBefore = await db.achievement.findUnique({
-    where: { userId_type: { userId: input.userId, type: "CERTIFICATE_UNLOCK" } },
+    where: {
+      userId_type: {
+        userId: input.userId,
+        type: "CERTIFICATE_UNLOCK",
+      },
+    },
   });
+
   const certificate = await unlockCertificate(input.userId);
-  const certificateNewlyUnlocked = !certificateBefore && Boolean(certificate);
+
+  const certificateNewlyUnlocked =
+    !certificateBefore && Boolean(certificate);
 
   const netTokens = await db.tokenTransaction.aggregate({
     where: {
